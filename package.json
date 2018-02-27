@@ -1,0 +1,28 @@
+{
+  "name": "auth0-rules",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:ThreatResponse/auth0-rules.git",
+  "author": "andrewkrug <andrewkrug@gmail.com>",
+  "license": "MPL-2.0",
+  "babel": {
+    "presets": [
+      "es2015"
+    ]
+  },
+  "scripts": {
+    "test": "./node_modules/mocha/bin/mocha --compilers js:babel-core/register --reporter spec test/test_*.js || exit 0"
+  },
+  "dependencies": {
+    "auth0-rule-sandbox": "^2.0.1",
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-eval": "^6.22.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
+    "chai": "^4.1.2",
+    "eslint": "^4.18.1",
+    "eslint-config-google": "^0.9.1",
+    "mocha": "^5.0.1",
+    "webtask-runtime": "^1.7.0"
+  }
+}

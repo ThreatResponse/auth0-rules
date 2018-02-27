@@ -1,0 +1,13 @@
+sudo: required
+dist: trusty
+language: node_js
+node_js:
+  - "7"
+before_install:
+  - yarn install
+script:
+  - yarn run test
+cache:
+  yarn: true
+  directories:
+    - node_modules
