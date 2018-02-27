@@ -1,3 +1,7 @@
+//This rule is managed by continuous release / continuous integration
+// Do not edit this rule here.
+// Visit https://github.com/threatresponse/auth0-rules to contribute.
+
 function (user, context, callback) {
   var CLIENT_IDS = [
     "ju4KXE1fPksWMDRJbphK6Tfl3LPKBGul" // AWS Account Federated Access Dev
