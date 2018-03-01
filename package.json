@@ -16,6 +16,7 @@
   "dependencies": {
     "auth0-bundler": "^1.0.2",
     "auth0-rule-sandbox": "^2.0.1",
+    "auth0-rules-runtime": "https://github.com/andrewkrug/auth0-rules-runtime.git",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
     "babel-preset-env": "^1.6.1",
@@ -31,6 +32,7 @@
     "gulp-flatmap": "^1.0.2",
     "mocha": "^5.0.1",
     "request": "^2.83.0",
+    "tedious": "^2.3.1",
     "webtask-runtime": "^1.7.0"
   }
 }
