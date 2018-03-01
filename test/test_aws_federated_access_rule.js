@@ -1,107 +1,180 @@
-const auth0runner = require("auth0-rule-sandbox");
+import {assert, expect, should} from 'chai'
+import RuleRunner from './helpers/rule_runner'
+
 const request = require('request')
 
-let assert = require("chai").assert;
-let expect = require("chai").expect;
-let should = require("chai").should();
+describe('AwsFederatedAccess', () => {
+  const rule_path = 'dist/aws-federated-access.js'
 
-// Load the rule
-const rule_path = "../rules/aws-federated-access.js";
-
-// These options should result in a successful auth and access.
-const good_options = {
-  user: {
-    "name": "Andrew Krug",
-    "email": "andrewkrug@gmail.com",
-    "email_verified": true
-  },
-  context: {
-    "clientID": "ju4KXE1fPksWMDRJbphK6Tfl3LPKBGul",
-    "clientName": "AWS Federated Access",
-    "connectionStrategy": "auth0",
-    "samlConfiguration":   {} //Only required if SAML Client
-  },
-  configuration: {
-    oidc_conformant: "true"
-  },
-  globals: {
-    request: request
-  }
-}
-
-//These options should result in no access
-const bad_options = {
-  user: {
-    "name": "Evil Bob",
-    "email": "evilbob@bad.xyz",
-    "email_verified": true
-  },
-  context: {
-    "clientID": "juasakjhsadjsdhdsfhsdjfhsdf",
-    "clientName": "Not AWS Federated Access",
-    "connectionStrategy": "auth0",
-    "samlConfiguration":   {} //Only required if SAML Client
-  },
-  configuration: {
-    oidc_conformant: "true"
-  },
-  globals: {
-    request: request
-  }
-}
-
-const good_user_result = {
-  name: "Andrew Krug",
-  email: "andrewkrug@gmail.com",
-  email_verified: true,
-  awsRole:
-   [
-     "arn:aws:iam::576309420438:role/FederatedAWSAccountAdmin,arn:aws:iam::576309420438:saml-provider/Auth0",
-     "arn:aws:iam::576309420438:role/FederatedAWSAccountRead,arn:aws:iam::576309420438:saml-provider/Auth0"
-   ],
-  awsRoleSession: "andrewkrug@gmail.com"
-}
-
-const good_client_result = {
-  clientID: "ju4KXE1fPksWMDRJbphK6Tfl3LPKBGul",
-  clientName: "AWS Federated Access",
-  connectionStrategy: "auth0",
-  samlConfiguration:
-   { mappings:
-      { "https://aws.amazon.com/SAML/Attributes/Role": "awsRole",
-        "https://aws.amazon.com/SAML/Attributes/RoleSessionName": "awsRoleSession",
-        "https://aws.amazon.com/SAML/Attributes/SessionDuration": "43200" }
-    }
-}
-
-describe("with a good client and user", () => {
-
-  it('should return a good result', () => {
-
-    auth0runner(rule_path, good_options, (err, user, context) => {
-      if (err) {
-        console.log(err)
-        expect(err).not.to.exist
-      } else {
-        expect(err).not.to.exist
-        expect(user).to.deep.equal(good_user_result)
+  const validuser = {
+    blocked: false,
+    email: 'andrewkrug@gmail.com',
+    email_verified: true,
+    identities: [
+      {
+        provider: 'github',
+        user_id: '1731633',
+        connection: 'github',
+        isSocial: true
       }
+    ],
+    last_ip: '8.8.8.8',
+    last_login: '2017-03-02T09:37:57.139Z',
+    logins_count: 10,
+    name: 'Andrew Krug',
+    nickname: 'akrug',
+    picture: 'https://avatars2.githubusercontent.com/u/1731633?v=3',
+    created_at: '1970-01-01T13:11:34.478Z',
+    updated_at: '2017-04-11T13:11:34.478Z',
+    user_id: 'github|1731578'
+  }
+
+  const validcontext = {
+    clientID: 'ju4KXE1fPksWMDRJbphK6Tfl3LPKBGul',
+    clientName: 'login-service',
+    connection: 'auth0',
+    connectionStrategy: 'auth0',
+    protocol: 'oidc-basic-profile',
+    sessionID: 'session-id',
+    request: {
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
+      ip: '188.6.125.49',
+      hostname: 'ephemeralsystems.auth0.com',
+      geoip:
+      {
+        country_code: 'US',
+        country_code3: 'USA',
+        country_name: 'United States',
+        city_name: 'Ashland',
+        latitude: 42.194575800,
+        longitude: -122.709476700,
+        time_zone: 'America/Los_Angeles',
+        continent_code: 'NA'
+      }
+    }
+  }
+
+  // todo: ask andrew - this was returning stuff even when the client did not match...
+  describe('when the client id does not match', () => {
+    let testRule
+    const rule_runner = new RuleRunner(rule_path)
+    const mismatchContext = Object.assign({}, validcontext, {clientID: 'something-else'})
+
+    beforeEach(() => {
+      testRule = rule_runner.validate(validuser, mismatchContext)
+    })
+
+    it('does not return an error', () => {
+      return testRule.then((result) => {
+        expect(result).to.exist
+        expect(result.error).not.to.exist
+      })
+    })
+
+    it('adds the roleSession information', () => {
+      return testRule.then((result) => {
+        expect(result.user.awsRoleSession).not.to.exist
+      })
+    })
+
+    it('does not add the role information', () => {
+      return testRule.then((result) => {
+        expect(result.user.awsRole).not.to.exist
+      })
+    })
+
+    it('does not return SAML mappings', () => {
+      return testRule.then((result) => {
+        expect(result.context.samlConfiguration).to.deep.equal({})
+      })
     })
   })
-})
 
-describe("with a bad client and user", () => {
+  describe('with a user not in the whitelist', () => {
+    let testRule
+    const rule_runner = new RuleRunner(rule_path)
 
-  it('should return a bad result', () => {
-    let error
-
-    try {
-      auth0runner(rule_path, bad_options, (err, user, context) => {
-        error = err
-      })
-    } catch (err) {
-      error = err // this is catching the wrong thing... but it shows that the rule is working
+    const invaliduser = {
+      blocked: false,
+      email: 'whoever@example.com',
+      email_verified: true,
+      identities: [
+        {
+          provider: 'github',
+          user_id: '1731633',
+          connection: 'github',
+          isSocial: true
+        }
+      ],
+      last_ip: '8.8.8.8',
+      last_login: '2017-03-02T09:37:57.139Z',
+      logins_count: 10,
+      name: 'Who Ever',
+      nickname: 'whoever',
+      picture: 'https://avatars2.githubusercontent.com/u/1731633?v=3',
+      created_at: '1970-01-01T13:11:34.478Z',
+      updated_at: '2017-04-11T13:11:34.478Z',
+      user_id: 'github|1731578'
     }
-    expect(error).to.exist;
+
+    beforeEach(() => {
+      testRule = rule_runner.validate(invaliduser, validcontext)
+    })
+
+    it('returns UnauthorizedError', () => {
+      return testRule.then((result) => {
+        expect(result).to.exist
+        expect(result.error).to.deep.equal({
+          name: 'UnauthorizedError',
+          code: 'unauthorized',
+          message: 'Access denied.',
+          statusCode: 401,
+          description: 'Access denied.'
+        })
+      })
+    })
+  })
+
+  describe('with a valid client and user', () => {
+    let testRule
+    const rule_runner = new RuleRunner(rule_path)
+
+    beforeEach(() => {
+      testRule = rule_runner.validate(validuser, validcontext)
+    })
+
+    it('does not return an error', () => {
+      return testRule.then((result) => {
+        expect(result).to.exist
+        expect(result.error).not.to.exist
+      })
+    })
+
+    it('adds the roleSession information', () => {
+      return testRule.then((result) => {
+        expect(result.user.awsRoleSession).to.equal('andrewkrug@gmail.com')
+      })
+    })
+
+    it('adds the role information', () => {
+      return testRule.then((result) => {
+        expect(result.user.awsRole).to.deep.equal([
+          'arn:aws:iam::576309420438:role/FederatedAWSAccountAdmin,arn:aws:iam::576309420438:saml-provider/Auth0',
+          'arn:aws:iam::576309420438:role/FederatedAWSAccountRead,arn:aws:iam::576309420438:saml-provider/Auth0'
+        ])
+      })
+    })
+
+    it('returns the context with SAML mappings', () => {
+      return testRule.then((result) => {
+        expect(result.context.samlConfiguration).to.deep.equal({
+          mappings: {
+            'https://aws.amazon.com/SAML/Attributes/Role': 'awsRole',
+            'https://aws.amazon.com/SAML/Attributes/RoleSessionName': 'awsRoleSession',
+            'https://aws.amazon.com/SAML/Attributes/SessionDuration': '43200'
+          }
+        })
+      })
+    })
   })
 })

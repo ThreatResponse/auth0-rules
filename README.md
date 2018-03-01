@@ -19,7 +19,7 @@ ThreatResponse AWS Console.
 1. Clone the repository.
 2. yarn install
 3. Iterate
-4. `yarn run test`
+4. `yarn test` or `yarn watch`
 5. Pull request
 
 ## ES2015 Support Via Babel
@@ -27,7 +27,7 @@ ThreatResponse AWS Console.
 This build pipeline now supports building rules in ES2015.
 Simply do the following:
 
-1. Write your file in the `rules-es` directory.
+1. Write your file in the `rules` directory.
 2. Write your json file that defines the auth0 rule precedence.
 3. Run `yarn run gulp` # Gulp will then build the ECMAScript5 version to `dist/`
 4. Deploy to auth0 from dist.
