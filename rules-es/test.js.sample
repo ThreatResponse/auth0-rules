@@ -1,0 +1,13 @@
+// my-rule.js
+// Example rule to be deployed to auth0
+
+// This dependency will be automatically bundled into the rule
+const doRequest = require('../common/function');
+// This dependency will be loaded using require
+const R = require('ramda');
+
+module.exports = function myRule(config, user, context, callback) {
+    return doRequest(`${config.baseUrl}/some/endpoint`, user).then(function (result) {
+        callback(null, R.merge({ some: 'result' }, result), context);
+    });
+};

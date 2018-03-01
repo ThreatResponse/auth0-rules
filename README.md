@@ -22,6 +22,20 @@ ThreatResponse AWS Console.
 4. `yarn run test`
 5. Pull request
 
+## ES2015 Support Via Babel
+
+This build pipeline now supports building rules in ES2015.
+Simply do the following:
+
+1. Write your file in the `rules-es` directory.
+2. Write your json file that defines the auth0 rule precedence.
+3. Run `yarn run gulp` # Gulp will then build the ECMAScript5 version to `dist/`
+4. Deploy to auth0 from dist.
+
+> Note as a means of centralizing testable duplicated code you may write modules inside of common and bundle them into every rule that is built.
+
+_Don't forget to write tests to cover your code!_
+
 ## Future
 
 * Style lint ECMAScript5 in pipeline

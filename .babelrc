@@ -1,6 +1,3 @@
 {
-  "presets": [
-    "es2015"
-  ],
-  "plugins": ["transform-eval"]
+  "presets": ["es2015"]
 }
